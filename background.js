@@ -43,7 +43,7 @@ browser.runtime.onInstalled.addListener(() => {
 browser.contextMenus.onClicked.addListener((info, tab) => {
     const drawFunctions = {
         "ruleOfThirds": drawRuleOfThirds,
-        "perspective": drawPerspectiveLines,
+        "perspective": drawPerspective,
         "diagonalMethod": drawDiagonalMethod,
         "harmoniousTriangles": drawHarmoniousTriangles,
         "goldenSections": drawGoldenSections,

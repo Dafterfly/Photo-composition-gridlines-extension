@@ -175,6 +175,4 @@ function drawGoldenSections(ctx, width, height) {
 
 function drawGoldenSpiralSections(ctx, width, height) {
     drawGoldenSpiral(ctx, width, height);
-
-    // Add dividing sections here if needed
 }
