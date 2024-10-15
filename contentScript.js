@@ -1,18 +1,18 @@
-let lastHoveredImg = null;
+let rightClickedImg = null;
 
-// Track the last hovered image
-document.addEventListener('mouseover', (event) => {
+// Track the image that was right-clicked
+document.addEventListener('contextmenu', (event) => {
     if (event.target.tagName === 'IMG') {
-        lastHoveredImg = event.target;
-        console.log("Image hovered:", lastHoveredImg);
+        rightClickedImg = event.target;
+        console.log("Right-clicked image:", rightClickedImg);
     }
 });
 
 // Listen for messages from the background script
 browser.runtime.onMessage.addListener((message) => {
-    const img = lastHoveredImg; // Use the last hovered image, even if the mouse has moved
+    const img = rightClickedImg; // Use the right-clicked image
     if (!img) {
-        console.log("No image found!");
+        console.log("No right-clicked image found!");
         return;
     }
 
@@ -33,6 +33,7 @@ browser.runtime.onMessage.addListener((message) => {
             console.log("No valid drawing action specified.");
     }
 });
+
 
 function createOverlay(imgRect) {
     const overlay = document.createElement('canvas');
