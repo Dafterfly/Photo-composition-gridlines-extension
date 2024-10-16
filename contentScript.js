@@ -4,175 +4,119 @@ let rightClickedImg = null;
 document.addEventListener('contextmenu', (event) => {
     if (event.target.tagName === 'IMG') {
         rightClickedImg = event.target;
-        console.log("Right-clicked image:", rightClickedImg);
+        console.log("Right-clicked image detected:", rightClickedImg);
     }
 });
 
-// Listen for messages from the background script
-browser.runtime.onMessage.addListener((message) => {
-    const img = rightClickedImg; // Use the right-clicked image
-    if (!img) {
-        console.log("No right-clicked image found!");
-        return;
-    }
-
-    const overlay = createOverlay(img.getBoundingClientRect());
-    const ctx = overlay.getContext("2d");
-
-    switch (message.action) {
-        case "drawRuleOfThirds":
-            drawRuleOfThirds(ctx, img.width, img.height);
-            break;
-        case "drawGoldenSpiral":
-            drawGoldenSpiral(ctx, img.width, img.height);
-            break;
-        case "drawPerspective":
-            drawPerspective(ctx, img.width, img.height);
-            break;
-        case "drawDiagonalMethod":
-            drawDiagonalMethod(ctx, img.width, img.height);
-            break;
-        case "drawHarmoniousTriangles":
-            drawHarmoniousTriangles(ctx, img.width, img.height);
-            break;
-        case "drawGoldenSections":
-            drawGoldenSections(ctx, img.width, img.height);
-            break;
-        case "drawGoldenSpiralSections":
-            drawGoldenSpiralSections(ctx, img.width, img.height);
-            break;
-        default:
-            console.log("No valid drawing action specified.");
-    }
-});
-
-
-function createOverlay(imgRect) {
+// Function to create and position the overlay
+function createOverlay(img) {
+    const imgRect = img.getBoundingClientRect();
     const overlay = document.createElement('canvas');
+
+    // Set canvas size to match the image size
     overlay.width = imgRect.width;
     overlay.height = imgRect.height;
-    overlay.style.position = 'absolute';
-    overlay.style.top = `${imgRect.top + window.scrollY}px`;
-    overlay.style.left = `${imgRect.left + window.scrollX}px`;
-    overlay.style.pointerEvents = 'none'; // Makes overlay non-interactive
 
+    // Position the overlay exactly on top of the image
+    overlay.style.position = 'absolute';
+    overlay.style.top = `${imgRect.top + window.scrollY}px`; // Account for vertical scrolling
+    overlay.style.left = `${imgRect.left + window.scrollX}px`; // Account for horizontal scrolling
+
+    overlay.style.pointerEvents = 'none'; // Ensure no interaction with the overlay
+    overlay.style.zIndex = '9999'; // Keep the overlay on top
+
+    // Append the overlay to the body
     document.body.appendChild(overlay);
+
+    console.log("Overlay added with dimensions:", overlay.width, overlay.height);
+
     return overlay;
 }
 
-function drawRuleOfThirds(ctx, width, height) {
-    ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
+// Function to draw Rule of Thirds grid
+function ruleOfThirds(ctx, width, height) {
+    console.log("Drawing Rule of Thirds with dimensions:", width, height);
+    
+    ctx.clearRect(0, 0, width, height); // Clear previous drawings
+
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // Red color with transparency
     ctx.lineWidth = 2;
 
-    const thirdsX = width / 3;
-    const thirdsY = height / 3;
+    const colWidth = width / 3;
+    const rowHeight = height / 3;
 
-    // Vertical lines
-    ctx.beginPath();
-    ctx.moveTo(thirdsX, 0);
-    ctx.lineTo(thirdsX, height);
-    ctx.moveTo(thirdsX * 2, 0);
-    ctx.lineTo(thirdsX * 2, height);
-    // Horizontal lines
-    ctx.moveTo(0, thirdsY);
-    ctx.lineTo(width, thirdsY);
-    ctx.moveTo(0, thirdsY * 2);
-    ctx.lineTo(width, thirdsY * 2);
-    ctx.stroke();
-}
-
-function drawGoldenSpiral(ctx, width, height) {
-    const phi = 1.618;
-    let x = 0, y = 0;
-    let w = width, h = height;
-
-    ctx.strokeStyle = 'rgba(255, 165, 0, 0.8)';
-    ctx.lineWidth = 2;
-
-    for (let i = 0; i < 4; i++) {
+    // Draw vertical lines
+    for (let i = 1; i < 3; i++) {
         ctx.beginPath();
-        ctx.arc(x, y, Math.min(w, h), 0, Math.PI / 2, false);
-        x += w / phi;
-        y += h / phi;
-        w /= phi;
-        h /= phi;
+        ctx.moveTo(i * colWidth, 0);
+        ctx.lineTo(i * colWidth, height);
         ctx.stroke();
+        console.log("Vertical line drawn at:", i * colWidth);
     }
+
+    // Draw horizontal lines
+    for (let i = 1; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * rowHeight);
+        ctx.lineTo(width, i * rowHeight);
+        ctx.stroke();
+        console.log("Horizontal line drawn at:", i * rowHeight);
+    }
+
+    console.log("Rule of Thirds grid drawn successfully.");
 }
 
-function drawPerspective(ctx, width, height) {
-    ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
-    ctx.lineWidth = 2;
+// Listen for messages from the background script
+browser.runtime.onMessage.addListener((message) => {
+    console.log("Message received:", message);  // Log the entire message
 
-    // Draw perspective lines (diagonal lines from corners to center)
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, height);
-    ctx.moveTo(width, 0);
-    ctx.lineTo(0, height);
+    const img = rightClickedImg;
+    if (!img) {
+        console.error("No image found to draw on.");
+        return;
+    }
 
-    // Draw center cross
-    ctx.moveTo(width / 2, 0);
-    ctx.lineTo(width / 2, height);
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
+    const overlay = createOverlay(img);
+    const ctx = overlay.getContext("2d");
 
-    ctx.stroke();
-}
+    if (!ctx) {
+        console.error("Failed to get 2D context from the canvas.");
+        return;
+    }
 
-function drawDiagonalMethod(ctx, width, height) {
-    ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
-    ctx.lineWidth = 2;
+    // Define actions object
+    const actions = {
+        ruleOfThirds
+    };
 
-    // Draw diagonal lines corner to corner
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, height);
-    ctx.moveTo(width, 0);
-    ctx.lineTo(0, height);
+    // Log the available actions
+    console.log("Available actions:", Object.keys(actions));
 
-    ctx.stroke();
-}
+    // Check if the message action matches a function
+    if (actions[message.action]) {
+        console.log("Executing action:", message.action);
+        actions[message.action](ctx, overlay.width, overlay.height); // Call the function with canvas context and overlay size
+    } else {
+        console.error("No matching action found for:", message.action);
+    }
+});
 
-function drawHarmoniousTriangles(ctx, width, height) {
-    ctx.strokeStyle = 'rgba(255, 165, 0, 0.8)';
-    ctx.lineWidth = 2;
+// Recalculate position when window is resized or scrolled
+window.addEventListener('resize', updateOverlayPosition);
+window.addEventListener('scroll', updateOverlayPosition);
 
-    // Draw harmonious triangles
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, 0);
-    ctx.lineTo(0, height);
+function updateOverlayPosition() {
+    const img = rightClickedImg;
+    if (!img) return;
 
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, 0);
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, 0);
+    const imgRect = img.getBoundingClientRect();
+    const overlay = document.querySelector('canvas');
 
-    ctx.stroke();
-}
+    if (overlay) {
+        // Update the position based on the current scroll and layout
+        overlay.style.top = `${imgRect.top + window.scrollY}px`;
+        overlay.style.left = `${imgRect.left + window.scrollX}px`;
 
-function drawGoldenSections(ctx, width, height) {
-    const phi = 1.618; // Golden ratio
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
-    ctx.lineWidth = 2;
-
-    const phiX = width / phi;
-    const phiY = height / phi;
-
-    // Vertical golden section
-    ctx.beginPath();
-    ctx.moveTo(phiX, 0);
-    ctx.lineTo(phiX, height);
-
-    // Horizontal golden section
-    ctx.moveTo(0, phiY);
-    ctx.lineTo(width, phiY);
-
-    ctx.stroke();
-}
-
-function drawGoldenSpiralSections(ctx, width, height) {
-    drawGoldenSpiral(ctx, width, height);
+        console.log("Overlay position updated:", overlay.style.top, overlay.style.left);
+    }
 }
