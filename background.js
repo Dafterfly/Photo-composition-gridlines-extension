@@ -22,7 +22,7 @@ browser.runtime.onInstalled.addListener(() => {
 // Handle context menu clicks
 browser.contextMenus.onClicked.addListener((info, tab) => {
     console.log("Context menu clicked:", info.menuItemId); // Debug log
-    const validActions = ["ruleOfThirds", "perspective", "diagonalMethod", "harmoniousTriangles", "goldenSections", "goldenSpiral", "goldenSpiralSections"];
+    const validActions = ["ruleOfThirds", "perspective", "diagonalMethod", "baroqueSinisterDiagonals", "harmoniousTriangles", "goldenSections", "goldenSpiral", "goldenSpiralSections"];
     
     if (validActions.includes(info.menuItemId)) {
         browser.tabs.sendMessage(tab.id, { action: info.menuItemId });
