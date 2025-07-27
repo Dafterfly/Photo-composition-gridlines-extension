@@ -2,6 +2,7 @@
     "manifest_version": 2,
     "name": "Image Composition Overlay",
     "version": "1.1",
+    "description": "Adds photographic composition overlays to images in the context menu",    
     "permissions": ["contextMenus", "activeTab"],
     "background": {
         "scripts": ["background.js"]
@@ -13,10 +14,9 @@
         }
     ],
     "web_accessible_resources": [
-        {
-            "resources": ["fibonacci-spiral-overlay.png"],
-            "matches": ["<all_urls>"]
-        }
-    ]
-    "description": "Adds photographic composition overlays to images in the context menu"
+        "fibonacci-spiral-overlay.png"
+    ],
+    "icons": {
+        "48": "icon.png"
+    }
 }
