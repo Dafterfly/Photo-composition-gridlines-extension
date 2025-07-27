@@ -1,292 +1,229 @@
-
-
-
-// Track the image that was right-clicked, or find an image within the clicked element
+// === Global ===
 let rightClickedImg = null;
 
-// Track the image that was right-clicked, or find an image within the clicked element
+// === Event Listeners ===
+
+// Track right-clicked image or background image
 document.addEventListener('contextmenu', (event) => {
     if (event.target.tagName === 'IMG') {
         rightClickedImg = event.target;
-        } else {
-        // Check if the clicked element has a background image
+    } else {
         const backgroundImage = window.getComputedStyle(event.target).backgroundImage;
-        
-        if (backgroundImage && backgroundImage !== 'none') {
-            // Extract the URL from the background-image style
-            const urlMatch = backgroundImage.match(/url\(["']?(.+?)["']?\)/);
-            
-            if (urlMatch && urlMatch[1]) {
-                // Create a temporary image object with the extracted URL
-                rightClickedImg = new Image();
-                rightClickedImg.src = urlMatch[1];
-                console.log("Background image URL found:", rightClickedImg.src);
-            }
-            } else {
-            // Look for an IMG element inside the clicked element
+        const match = backgroundImage?.match(/url\(["']?(.+?)["']?\)/);
+
+        if (match && match[1]) {
+            rightClickedImg = new Image();
+            rightClickedImg.src = match[1];
+            console.log("Background image URL found:", rightClickedImg.src);
+        } else {
             rightClickedImg = event.target.querySelector('img');
         }
     }
-    
-    // Log to check which element was found (image or null)
-    if (rightClickedImg) {
+
+    if (rightClickedImg?.src) {
         console.log("Image found for context menu:", rightClickedImg.src);
-        } else {
+    } else {
         console.log("No image found in clicked element");
     }
 });
 
+// Window resize/scroll repositioning
+window.addEventListener('resize', updateOverlayPosition);
+window.addEventListener('scroll', updateOverlayPosition);
 
-// Function to create and position the overlay
+// === Overlay Utilities ===
+
+// Create canvas overlay over an image
 function createOverlay(img) {
-    const imgRect = img.getBoundingClientRect();
+    const { top, left, width, height } = img.getBoundingClientRect();
     const overlay = document.createElement('canvas');
-    
-    // Set canvas size to match the image size
-    overlay.width = imgRect.width;
-    overlay.height = imgRect.height;
-    
-    // Position the overlay exactly on top of the image
-    overlay.style.position = 'absolute';
-    overlay.style.top = `${imgRect.top + window.scrollY}px`; // Account for vertical scrolling
-    overlay.style.left = `${imgRect.left + window.scrollX}px`; // Account for horizontal scrolling
-    
-    overlay.style.pointerEvents = 'none'; // Ensure no interaction with the overlay
-    overlay.style.zIndex = '9999'; // Keep the overlay on top
-    
-    // Append the overlay to the body
+
+    Object.assign(overlay, { width, height });
+    Object.assign(overlay.style, {
+        position: 'absolute',
+        top: `${top + window.scrollY}px`,
+        left: `${left + window.scrollX}px`,
+        pointerEvents: 'none',
+        zIndex: 9999
+    });
+
     document.body.appendChild(overlay);
-    
-    console.log("Overlay added with dimensions:", overlay.width, overlay.height);
-    
+    console.log("Overlay added with dimensions:", width, height);
     return overlay;
 }
 
+// Create image-based overlay (e.g. spiral)
 function createImageOverlay(img, src) {
     const overlayImg = document.createElement('img');
 
-    overlayImg.src = browser.runtime.getURL(src);
-    overlayImg.style.position = 'absolute';
-    overlayImg.style.top = `${0}px`;
-    overlayImg.style.left = `${0}px`;
-    overlayImg.style.width = `${img.offsetWidth}px`;
-    overlayImg.style.height = `${img.offsetHeight}px`;
-    overlayImg.style.pointerEvents = 'none';
-    overlayImg.style.zIndex = '9999';
+    Object.assign(overlayImg, {
+        src: browser.runtime.getURL(src)
+    });
+
+    Object.assign(overlayImg.style, {
+        position: 'absolute',
+        top: '0px',
+        left: '0px',
+        width: `${img.offsetWidth}px`,
+        height: `${img.offsetHeight}px`,
+        pointerEvents: 'none',
+        zIndex: 9999
+    });
+
     overlayImg.classList.add('spiral-overlay');
-
     img.parentElement.appendChild(overlayImg);
-    console.log("Spiral PNG overlay added at exact image position:", overlayImg.src);
-
     return overlayImg;
 }
 
+// Update overlay position on scroll/resize
+function updateOverlayPosition() {
+    if (!rightClickedImg) return;
 
+    const { top, left } = rightClickedImg.getBoundingClientRect();
+    const position = {
+        top: `${top + window.scrollY}px`,
+        left: `${left + window.scrollX}px`
+    };
 
-// Function to draw Rule of Thirds grid
-function ruleOfThirds(ctx, width, height) {
-    console.log("Drawing Rule of Thirds with dimensions:", width, height);
-    
-    ctx.clearRect(0, 0, width, height); // Clear previous drawings
-    
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // Red color with transparency
-    ctx.lineWidth = 2;
-    
-    const colWidth = width / 3;
-    const rowHeight = height / 3;
-    
-    // Draw vertical lines
-    for (let i = 1; i < 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * colWidth, 0);
-        ctx.lineTo(i * colWidth, height);
-        ctx.stroke();
-        console.log("Vertical line drawn at:", i * colWidth);
-    }
-    
-    // Draw horizontal lines
-    for (let i = 1; i < 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, i * rowHeight);
-        ctx.lineTo(width, i * rowHeight);
-        ctx.stroke();
-        console.log("Horizontal line drawn at:", i * rowHeight);
-    }
-    
-    console.log("Rule of Thirds grid drawn successfully.");
+    document.querySelectorAll('canvas, img.spiral-overlay').forEach(el => {
+        el.style.top = position.top;
+        el.style.left = position.left;
+    });
+
+    console.log("Overlay position updated:", position.top, position.left);
 }
 
-// 2. Perspective (Cross and diagonals from corners to center)
-function perspective(ctx, width, height) {
-    ctx.clearRect(0, 0, width, height);
+// === Drawing Rules ===
+
+function ruleOfThirds(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+    ctx.lineWidth = 2;
+
+    [1, 2].forEach(i => {
+        ctx.beginPath();
+        ctx.moveTo((w / 3) * i, 0);
+        ctx.lineTo((w / 3) * i, h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, (h / 3) * i);
+        ctx.lineTo(w, (h / 3) * i);
+        ctx.stroke();
+    });
+}
+
+function perspective(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
     ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
     ctx.lineWidth = 2;
-    
-    // Draw diagonal lines from corners to the center
+
+    // Diagonals
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(width, height);
-    ctx.moveTo(width, 0);
-    ctx.lineTo(0, height);
+    ctx.lineTo(w, h);
+    ctx.moveTo(w, 0);
+    ctx.lineTo(0, h);
     ctx.stroke();
-    
-    // Draw center cross
+
+    // Cross
     ctx.beginPath();
-    ctx.moveTo(width / 2, 0);
-    ctx.lineTo(width / 2, height);
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
+    ctx.moveTo(w / 2, 0);
+    ctx.lineTo(w / 2, h);
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
     ctx.stroke();
 }
 
-// 3. Diagonal Method (Corner to corner)
-function baroqueSinisterDiagonals(ctx, width, height) {
-    ctx.clearRect(0, 0, width, height);
+function diagonalMethod(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
     ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
     ctx.lineWidth = 2;
-    
-    // Draw diagonal lines corner to corner
+
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(width, height);
-    ctx.moveTo(width, 0);
-    ctx.lineTo(0, height);
+    ctx.lineTo(w, h);
+    ctx.moveTo(w, 0);
+    ctx.lineTo(0, h);
     ctx.stroke();
 }
 
+function baroqueSinisterDiagonals(ctx, w, h) {
+    diagonalMethod(ctx, w, h);
+}
 
-// 3. Diagonal Method (Corner to corner)
-function diagonalMethod(ctx, width, height) {
-    ctx.clearRect(0, 0, width, height);
-    ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
+function harmoniousTriangles(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255, 165, 0, 0.8)';
     ctx.lineWidth = 2;
-    
-    // Draw diagonal lines corner to corner
+
+    const angleWOverH = Math.atan(w / h);
+    const angleHOverW = Math.atan(h / w);
+    const dst = h * Math.cos(angleWOverH) / Math.cos(angleHOverW);
+
+    const cx = w / 2, cy = h / 2;
+
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, height);
-    ctx.moveTo(width, 0);
-    ctx.lineTo(0, height);
+    ctx.moveTo(cx - w / 2, cy - h / 2);
+    ctx.lineTo(cx + w / 2, cy + h / 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2 + dst, cy - h / 2);
+    ctx.lineTo(cx - w / 2, cy + h / 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + w / 2, cy - h / 2);
+    ctx.lineTo(cx + w / 2 - dst, cy + h / 2);
     ctx.stroke();
 }
 
-// 4. Harmonious Triangles
-function harmoniousTriangles(ctx, width, height) {
-    ctx.clearRect(0, 0, width, height);
-    ctx.strokeStyle = 'rgba(255, 165, 0, 0.8)'; // Orange for harmonious triangles
-    ctx.lineWidth = 2;
-    
-    // Calculate dst value (the same way Darktable calculates it)
-    const angleWidthOverHeight = Math.atan(width / height);
-    const angleHeightOverWidth = Math.atan(height / width);
-    const dst = height * Math.cos(angleWidthOverHeight) / Math.cos(angleHeightOverWidth);
-    
-    // Adjust the coordinates to work with the canvas, centered around the middle
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Draw the main diagonal (from top-left to bottom-right)
-    ctx.beginPath();
-    ctx.moveTo(-width / 2 + centerX, -height / 2 + centerY); // Starting from top-left
-    ctx.lineTo(width / 2 + centerX, height / 2 + centerY);   // Ending at bottom-right
-    ctx.stroke();
-    
-    // Draw the line from the bottom-left corner to meet the diagonal
-    ctx.beginPath();
-    ctx.moveTo(-width / 2 + dst + centerX, -height / 2 + centerY); // Left side shifted by dst
-    ctx.lineTo(-width / 2 + centerX, height / 2 + centerY);        // Ending at bottom-left
-    ctx.stroke();
-    
-    // Draw the line from the top-right corner to meet the diagonal
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + centerX, -height / 2 + centerY);       // Starting at top-right
-    ctx.lineTo(width / 2 - dst + centerX, height / 2 + centerY);  // Right side shifted by dst
-    ctx.stroke();
-}
-
-
-
-// 5. Golden Sections
-function goldenSections(ctx, width, height) {
-    // Add golden section lines
+function goldenSections(ctx, w, h) {
     const phi = 0.618;
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
     ctx.lineWidth = 1;
-    
-    ctx.beginPath();
-    ctx.moveTo(width * phi, 0);
-    ctx.lineTo(width * phi, height);
-    ctx.moveTo(width * (1 - phi), 0);
-    ctx.lineTo(width * (1 - phi), height);
-    ctx.moveTo(0, height * phi);
-    ctx.lineTo(width, height * phi);
-    ctx.moveTo(0, height * (1 - phi));
-    ctx.lineTo(width, height * (1 - phi));
-    ctx.stroke();
+
+    [[w * phi, 0, w * phi, h], [w * (1 - phi), 0, w * (1 - phi), h],
+     [0, h * phi, w, h * phi], [0, h * (1 - phi), w, h * (1 - phi)]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    });
 }
 
-function drawGoldenSpiral(ctx, width, height) {
-    // First draw your existing content on canvas
-    // ctx.drawImage(...) or other drawing operations
-    
-    // Then load and overlay the spiral PNG
-    const spiralImg = new Image();
-    spiralImg.onload = function() {
-        // Draw the spiral image on top of existing content
-        ctx.drawImage(
-            spiralImg, 
-            0, 0, width, height  // Adjust position/size as needed
-        );
-    };
-    spiralImg.src = 'fibonacci-spiral-overlay.png';
+function drawGoldenSpiral(ctx, w, h) {
+    const spiral = new Image();
+    spiral.onload = () => ctx.drawImage(spiral, 0, 0, w, h);
+    spiral.src = 'fibonacci-spiral-overlay.png';
 }
 
-function goldenSpiral(ctx, width, height) {
-drawGoldenSpiral(ctx, width, height)
+function goldenSpiral(ctx, w, h) {
+    drawGoldenSpiral(ctx, w, h);
 }
 
-
-
-// 7. Golden Spiral Sections
-function goldenSpiralSections(ctx, width, height) {
-    //goldenSpiral(ctx, width, height);
-    
-    // Add golden section lines
-    const phi = 0.618;
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
-    ctx.lineWidth = 1;
-    
-    ctx.beginPath();
-    ctx.moveTo(width * phi, 0);
-    ctx.lineTo(width * phi, height);
-    ctx.moveTo(width * (1 - phi), 0);
-    ctx.lineTo(width * (1 - phi), height);
-    ctx.moveTo(0, height * phi);
-    ctx.lineTo(width, height * phi);
-    ctx.moveTo(0, height * (1 - phi));
-    ctx.lineTo(width, height * (1 - phi));
-    ctx.stroke();
+function goldenSpiralSections(ctx, w, h) {
+    goldenSections(ctx, w, h);
 }
 
-// Listen for messages from the background script
+// === Action Handler ===
 browser.runtime.onMessage.addListener((message) => {
-    console.log("Message received:", message);  // Log the entire message
-    
-    const img = rightClickedImg;
-    if (!img) {
+    console.log("Message received:", message);
+
+    if (!rightClickedImg) {
         console.error("No image found to draw on.");
         return;
     }
-    
-    const overlay = createOverlay(img);
-    const ctx = overlay.getContext("2d");
-    
+
+    const overlay = createOverlay(rightClickedImg);
+    const ctx = overlay.getContext('2d');
+
     if (!ctx) {
-        console.error("Failed to get 2D context from the canvas.");
+        console.error("Failed to get 2D context.");
         return;
     }
-    
-    // Define actions object
+
     const actions = {
         ruleOfThirds,
         perspective,
@@ -294,49 +231,19 @@ browser.runtime.onMessage.addListener((message) => {
         baroqueSinisterDiagonals,
         harmoniousTriangles,
         goldenSections,
-        goldenSpiral: (ctx, width, height) => {
-        createImageOverlay(rightClickedImg, 'fibonacci-spiral-overlay.png');
-    },
+        goldenSpiral: () => createImageOverlay(rightClickedImg, 'fibonacci-spiral-overlay.png'),
         goldenSpiralSections
     };
-    
-    // Log the available actions
-    console.log("Available actions:", Object.keys(actions));
-    
-    // Check if the message action matches a function
-    if (actions[message.action]) {
+
+    const action = actions[message.action];
+    if (action) {
         console.log("Executing action:", message.action);
-        actions[message.action](ctx, overlay.width, overlay.height); // Call the function with canvas context and overlay size
+        if (typeof action === 'function' && action.length === 3) {
+            action(ctx, overlay.width, overlay.height);
         } else {
-        console.error("No matching action found for:", message.action);
+            action(); // image overlay
+        }
+    } else {
+        console.error("Unknown action:", message.action);
     }
 });
-
-// Recalculate position when window is resized or scrolled
-window.addEventListener('resize', updateOverlayPosition);
-window.addEventListener('scroll', updateOverlayPosition);
-
-function updateOverlayPosition() {
-    const img = rightClickedImg;
-    if (!img) return;
-
-    const imgRect = img.getBoundingClientRect();
-    const canvasOverlay = document.querySelector('canvas');
-    const imageOverlay = document.querySelector('img.spiral-overlay');
-
-    const top = `${imgRect.top + window.scrollY}px`;
-    const left = `${imgRect.left + window.scrollX}px`;
-
-    if (canvasOverlay) {
-        canvasOverlay.style.top = top;
-        canvasOverlay.style.left = left;
-    }
-
-    if (imageOverlay) {
-        imageOverlay.style.top = top;
-        imageOverlay.style.left = left;
-    }
-
-    console.log("Overlay position updated:", top, left);
-}
-
