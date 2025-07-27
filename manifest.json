@@ -12,5 +12,11 @@
             "js": ["contentScript.js"]
         }
     ],
+    "web_accessible_resources": [
+        {
+            "resources": ["fibonacci-spiral-overlay.png"],
+            "matches": ["<all_urls>"]
+        }
+    ]
     "description": "Adds photographic composition overlays to images in the context menu"
 }

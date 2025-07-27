@@ -7,7 +7,7 @@ browser.runtime.onInstalled.addListener(() => {
         { id: "harmoniousTriangles", title: "Harmonious Triangles" },
         { id: "goldenSections", title: "Golden Sections" },
         { id: "goldenSpiral", title: "Golden Spiral" },
-        { id: "goldenSpiralSections", title: "Golden Spiral Sections" }
+        //{ id: "goldenSpiralSections", title: "Golden Spiral Sections" }
     ];
     
     menuItems.forEach(item => {
