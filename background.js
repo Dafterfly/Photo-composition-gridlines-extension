@@ -22,8 +22,6 @@ browser.runtime.onInstalled.addListener(() => {
 browser.contextMenus.onClicked.addListener((info, tab) => {
     const action = info.menuItemId;
 
-    console.log("Context menu clicked:", action);
-
     const supportedActions = [
         "ruleOfThirds",
         "perspective",

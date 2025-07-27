@@ -14,7 +14,6 @@ document.addEventListener('contextmenu', (event) => {
         if (match && match[1]) {
             rightClickedImg = new Image();
             rightClickedImg.src = match[1];
-            console.log("Background image URL found:", rightClickedImg.src);
         } else {
             rightClickedImg = event.target.querySelector('img');
         }
@@ -90,7 +89,6 @@ function updateOverlayPosition() {
         el.style.left = position.left;
     });
 
-    console.log("Overlay position updated:", position.top, position.left);
 }
 
 // === Drawing Rules ===
@@ -209,7 +207,6 @@ function goldenSpiralSections(ctx, w, h) {
 
 // === Action Handler ===
 browser.runtime.onMessage.addListener((message) => {
-    console.log("Message received:", message);
 
     if (!rightClickedImg) {
         console.error("No image found to draw on.");
