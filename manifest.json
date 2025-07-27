@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Image Composition Overlay",
-    "version": "1.1",
+    "version": "2.0",
     "description": "Adds photographic composition overlays to images in the context menu",    
     "permissions": ["contextMenus", "activeTab"],
     "background": {
